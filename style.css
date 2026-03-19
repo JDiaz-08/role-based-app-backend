@@ -1,0 +1,104 @@
+
+/* page visibility - hide all pages by default */
+.page {
+    display: none;
+}
+
+/* only show active page */
+.page.active {
+    display: block;
+}
+
+/* hide logged-in stuff when not authenticated */
+body.not-authenticated .role-logged-in {
+    display: none;
+}
+
+/* hide logged-out stuff when authenticated */
+body.authenticated .role-logged-out {
+    display: none;
+}
+
+/* admin role stuff - hidden by default */
+.role-admin {
+    display: none;
+}
+
+/* show admin stuff when user is admin */
+body.is-admin .role-admin {
+    display: block;
+}
+
+.navbar {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+     padding-top: 1rem;     
+     padding-bottom: 1rem;
+}
+
+.navbar-brand {
+    font-weight: 600;
+    font-size: 1.25rem;
+}
+
+.nav-link {
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.nav-link:hover {
+    transform: translateY(-2px);
+}
+
+.navbar-nav {
+    align-items: center;
+}
+
+
+.card {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+
+.toast-container {
+    position: fixed;
+    top: 90px;
+    left: 15px;
+    z-index: 9999;
+}
+
+
+.badge {
+    font-size: 0.85em;
+}
+
+
+table {
+    font-size: 0.95em;
+}
+
+
+.table-actions {
+    white-space: nowrap;
+}
+
+
+.table-actions .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+
+
+.input-group .item-name {
+    flex: 2;
+}
+
+
+.input-group .item-qty {
+    flex: 1;
+    max-width: 100px;
+}
+
+
+.input-group .remove-item {
+    width: 40px;
+}

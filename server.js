@@ -16,21 +16,32 @@ app.use(cors({
 
 app.use(express.json());
 
+const path = require('path');
+app.use(express.static(path.join(__dirname)));
+
 
 let users = [
   { id: 1, username: 'admin', password: '$2a$10$...', role: 'admin' }, 
   { id: 2, username: 'alice', password: '$2a$10$...', role: 'user' }
 ];
 
-// Pre-hash known passwords for demo
+let departments = [
+  { id: 'd1', name: 'Engineering', description: 'Software team' },
+  { id: 'd2', name: 'HR',          description: 'Human Resources' }
+];
+
+let employees = [];
+let requests  = [];
+
+function generateId() {
+    return Date.now().toString(36) + Math.random().toString(36).substring(2);
+}
+
 if (!users[0].password.includes('$2a$')) {
   users[0].password = bcrypt.hashSync('admin123', 10);
   users[1].password = bcrypt.hashSync('user123', 10);
 }
 
-// 📦 AUTH ROUTES
-
-// POST /api/register
 app.post('/api/register', async (req, res) => {
   const { username, password, role = 'user' } = req.body;
 
@@ -38,26 +49,26 @@ app.post('/api/register', async (req, res) => {
     return res.status(400).json({ error: 'Username and password required' });
   }
 
-  // Check if user exists
+ 
   const existing = users.find(u => u.username === username);
   if (existing) {
     return res.status(409).json({ error: 'User already exists' });
   }
 
-  // Hash password
+ 
   const hashedPassword = await bcrypt.hash(password, 10);
 
   const newUser = {
     id: users.length + 1,
     username,
     password: hashedPassword,
-    role // Note: In real apps, role should NOT be set by client!
+    role 
   };
 
   users.push(newUser);
-res.status(201).json({ message: 'User registered', username, role });
+  res.status(201).json({ message: 'User registered', username, role });
+});
 
-// POST /api/login
 app.post('/api/login', async (req, res) => {
   const { username, password } = req.body;
 
@@ -66,7 +77,6 @@ app.post('/api/login', async (req, res) => {
     return res.status(401).json({ error: 'Invalid credentials' });
   }
 
-  // Generate JWT token
   const token = jwt.sign(
     { id: user.id, username: user.username, role: user.role },
     SECRET_KEY,
@@ -76,27 +86,21 @@ app.post('/api/login', async (req, res) => {
   res.json({ token, user: { username: user.username, role: user.role } });
 });
 
-// 🔒 PROTECTED ROUTE: Get user profile
 app.get('/api/profile', authenticateToken, (req, res) => {
   res.json({ user: req.user });
 });
 
-// 🛡️ ROLE-BASED PROTECTED ROUTE: Admin-only
 app.get('/api/admin/dashboard', authenticateToken, authorizeRole('admin'), (req, res) => {
     res.json({ message: 'Welcome to admin dashboard!', data: 'Secret admin info' });
 });
 
-// 🌐 PUBLIC ROUTE: Guest content
 app.get('/api/content/guest', (req, res) => {
     res.json({ message: 'Public content for all visitors' });
 });
 
-// ⚙️ MIDDLEWARE
-
-// Token authentication
 function authenticateToken(req, res, next) {
     const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+    const token = authHeader && authHeader.split(' ')[1]; 
 
     if (!token) {
         return res.status(401).json({ error: 'Access token required' });
@@ -109,7 +113,6 @@ function authenticateToken(req, res, next) {
     });
 }
 
-// Role authorization
 function authorizeRole(role) {
     return (req, res, next) => {
         if (req.user.role !== role) {
@@ -119,7 +122,6 @@ function authorizeRole(role) {
     };
 }
 
-// 🚀 Start server
 app.listen(PORT, () => {
     console.log(`✅ Backend running on http://localhost:${PORT}`);
     console.log(`🔐 Try logging in with:`);
