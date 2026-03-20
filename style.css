@@ -1,9 +1,6 @@
-/* ── Google Font ─────────────────────────────────────────────────────────────
-   Import DM Sans — clean, modern, slightly characterful without being loud
-   ─────────────────────────────────────────────────────────────────────────── */
+
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
 
-/* ── CSS variables ────────────────────────────────────────────────────────── */
 :root {
     --primary:        #2563eb;
     --primary-dark:   #1d4ed8;
@@ -20,7 +17,7 @@
     --transition:     all .18s ease;
 }
 
-/* ── Base ─────────────────────────────────────────────────────────────────── */
+
 *, *::before, *::after { box-sizing: border-box; }
 
 body {
@@ -32,18 +29,17 @@ body {
     -webkit-font-smoothing: antialiased;
 }
 
-/* ── Page visibility ──────────────────────────────────────────────────────── */
+
 .page          { display: none; }
 .page.active   { display: block; }
 
-/* ── Auth visibility ──────────────────────────────────────────────────────── */
+
 body.not-authenticated .role-logged-in  { display: none; }
 body.authenticated     .role-logged-out { display: none; }
 
 .role-admin                { display: none; }
 body.is-admin .role-admin  { display: block; }
 
-/* ── Navbar ───────────────────────────────────────────────────────────────── */
 .navbar {
     background: #0f172a !important;
     padding: 0.875rem 0;
@@ -105,7 +101,7 @@ body.is-admin .role-admin  { display: block; }
 
 .dropdown-divider { margin: 0.35rem 0; border-color: var(--border); }
 
-/* ── Cards ────────────────────────────────────────────────────────────────── */
+
 .card {
     border: 1px solid var(--border);
     border-radius: var(--radius);
@@ -117,7 +113,6 @@ body.is-admin .role-admin  { display: block; }
 .card-body  { padding: 1.75rem; }
 .card-title { font-weight: 700; font-size: 1.2rem; margin-bottom: 1.25rem; color: var(--text); }
 
-/* ── Buttons ──────────────────────────────────────────────────────────────── */
 .btn {
     font-family: 'DM Sans', sans-serif;
     font-weight: 600;
@@ -184,14 +179,13 @@ body.is-admin .role-admin  { display: block; }
     color: var(--text);
 }
 
-/* small button overrides */
+
 .btn-sm {
     padding: 0.3rem 0.7rem;
     font-size: 0.8rem;
     border-radius: 6px;
 }
 
-/* ── Form controls ────────────────────────────────────────────────────────── */
 .form-control,
 .form-select {
     font-family: 'DM Sans', sans-serif;
@@ -221,7 +215,7 @@ body.is-admin .role-admin  { display: block; }
     letter-spacing: 0.04em;
 }
 
-/* ── Alerts ───────────────────────────────────────────────────────────────── */
+
 .alert {
     border: none;
     border-radius: var(--radius);
@@ -235,7 +229,7 @@ body.is-admin .role-admin  { display: block; }
 .alert-danger  { background: #fef2f2; color: #b91c1c; }
 .alert-warning { background: #fffbeb; color: #b45309; }
 
-/* ── Tables ───────────────────────────────────────────────────────────────── */
+
 .table {
     font-size: 0.9rem;
     border-collapse: separate;
@@ -274,7 +268,7 @@ body.is-admin .role-admin  { display: block; }
     transition: var(--transition);
 }
 
-/* ── Badges ───────────────────────────────────────────────────────────────── */
+
 .badge {
     font-family: 'DM Sans', sans-serif;
     font-weight: 600;
@@ -288,7 +282,7 @@ body.is-admin .role-admin  { display: block; }
 .bg-danger  { background: #fee2e2 !important; color: #b91c1c !important; }
 .bg-warning { background: #fef3c7 !important; color: #92400e !important; }
 
-/* ── Modal ────────────────────────────────────────────────────────────────── */
+
 .modal-content {
     border: 1px solid var(--border);
     border-radius: 14px;
@@ -305,7 +299,7 @@ body.is-admin .role-admin  { display: block; }
 .modal-title { font-weight: 700; font-size: 1.05rem; }
 .modal-body  { padding: 1.5rem; }
 
-/* ── Toast container ──────────────────────────────────────────────────────── */
+
 .toast-container {
     position: fixed;
     top: 80px;
@@ -328,7 +322,7 @@ body.is-admin .role-admin  { display: block; }
     to   { opacity: 1; transform: translateX(0); }
 }
 
-/* ── Page headings ────────────────────────────────────────────────────────── */
+
 main h2 {
     font-weight: 700;
     font-size: 1.4rem;
@@ -337,7 +331,7 @@ main h2 {
     letter-spacing: -0.02em;
 }
 
-/* ── Home page ────────────────────────────────────────────────────────────── */
+
 #home-page h1 {
     font-weight: 700;
     font-size: 2rem;
@@ -355,12 +349,12 @@ main h2 {
     margin-bottom: 0.25rem;
 }
 
-/* ── Table actions ────────────────────────────────────────────────────────── */
+
 .table-actions               { white-space: nowrap; }
 .table-actions .btn          { margin-right: 0.3rem; }
 .table-actions .btn:last-child { margin-right: 0; }
 
-/* ── Input group (request items) ──────────────────────────────────────────── */
+
 .input-group .item-name { flex: 2; }
 .input-group .item-qty  { flex: 1; max-width: 100px; }
 .input-group .remove-item { width: 40px; }
@@ -369,7 +363,6 @@ main h2 {
 .input-group .form-control:first-child { border-radius: 7px 0 0 7px; }
 .input-group > .btn:last-child         { border-radius: 0 7px 7px 0; }
 
-/* ── Scrollbar (webkit) ───────────────────────────────────────────────────── */
 ::-webkit-scrollbar       { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
