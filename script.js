@@ -1,5 +1,8 @@
+// ── Global state ──────────────────────────────────────────────────────────────
 
 let currentUser = null;
+
+// ── API helper ────────────────────────────────────────────────────────────────
 
 const API_BASE = 'http://localhost:3000/api';
 
@@ -17,69 +20,31 @@ async function apiCall(endpoint, options = {}) {
         const data = await response.json();
         return { ok: response.ok, status: response.status, data };
     } catch (err) {
+        console.error('API error:', err);
         return { ok: false, status: 0, data: { error: 'Network error. Is the server running?' } };
     }
 }
 
+// ── localStorage (kept for CRUD features) ────────────────────────────────────
+
 const STORAGE_KEY = 'ipt_demo_v1';
 
 window.db = {
-    accounts: [],
+    accounts:    [],
     departments: [],
-    employees: [],
-    requests: []
+    employees:   [],
+    requests:    []
 };
-
-document.addEventListener('DOMContentLoaded', async () => {
-    
-    loadFromStorage();
-
-    initializeEventListeners();
-
-    if (!window.location.hash) {
-        window.location.hash = '#/';
-    }
-
-    const jwtToken  = sessionStorage.getItem('authToken');
-    const authToken = localStorage.getItem('auth_token');
-
-    if (jwtToken) {
-        const { ok, data } = await apiCall('/profile');
-        if (ok) {
-            const account = window.db.accounts.find(
-                acc => acc.email === data.user.username && acc.verified
-            );
-            setAuthState(true, account || {
-                firstName: data.user.username, lastName: '',
-                email: data.user.username, role: data.user.role
-            });
-        } else {
-            sessionStorage.removeItem('authToken');
-        }
-    } else if (authToken) {
-        const user = window.db.accounts.find(acc => acc.email === authToken && acc.verified);
-        if (user) setAuthState(true, user);
-        else      localStorage.removeItem('auth_token');
-    }
-
-   
-    handleRouting();
-
-    window.addEventListener('hashchange', handleRouting);
-});
 
 function loadFromStorage() {
     try {
         const stored = localStorage.getItem(STORAGE_KEY);
         if (stored) {
-            
             window.db = JSON.parse(stored);
         } else {
-            
             seedDatabase();
         }
     } catch (e) {
-        
         console.error('Error loading data:', e);
         seedDatabase();
     }
@@ -102,37 +67,82 @@ function seedDatabase() {
                 firstName: 'Admin',
                 lastName: '',
                 email: 'admin@example.com',
-                password: 'Password123!',
+                password: 'admin123',
                 role: 'Admin',
                 verified: true
             }
         ],
         departments: [
-            { id: generateId(), name: 'Engineering', description: 'Software team' },
-            { id: generateId(), name: 'HR', description: 'Human Resources' }
+            { id: 'd1', name: 'Engineering', description: 'Software team' },
+            { id: 'd2', name: 'HR',          description: 'Human Resources' }
         ],
         employees: [],
-        requests: []
+        requests:  []
     };
     saveToStorage();
 }
+
+function generateId() {
+    return Date.now().toString(36) + Math.random().toString(36).substring(2);
+}
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+
+document.addEventListener('DOMContentLoaded', async () => {
+
+    loadFromStorage();
+    initializeEventListeners();
+
+    if (!window.location.hash) {
+        window.location.hash = '#/';
+    }
+
+    // Restore session — check JWT first, fall back to old localStorage token
+    const jwtToken  = sessionStorage.getItem('authToken');
+    const authToken = localStorage.getItem('auth_token');
+
+    if (jwtToken) {
+        const { ok, data } = await apiCall('/profile');
+        if (ok) {
+            const account = window.db.accounts.find(
+                acc => acc.email === data.user.username && acc.verified
+            );
+            setAuthState(true, account || {
+                firstName: data.user.username,
+                lastName:  '',
+                email:     data.user.username,
+                role:      data.user.role
+            });
+        } else {
+            sessionStorage.removeItem('authToken');
+        }
+    } else if (authToken) {
+        const user = window.db.accounts.find(acc => acc.email === authToken && acc.verified);
+        if (user) {
+            setAuthState(true, user);
+        } else {
+            localStorage.removeItem('auth_token');
+        }
+    }
+
+    handleRouting();
+    window.addEventListener('hashchange', handleRouting);
+});
+
+// ── Routing ───────────────────────────────────────────────────────────────────
 
 function navigateTo(hash) {
     window.location.hash = hash;
 }
 
 function handleRouting() {
-   
-    const hash = window.location.hash || '#/';
-    const route = hash.substring(2); 
+    const hash  = window.location.hash || '#/';
+    const route = hash.substring(2);
 
-    document.querySelectorAll('.page').forEach(page => {
-        page.classList.remove('active');
-    });
-
+    document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
 
     const protectedRoutes = ['profile', 'employees', 'departments', 'accounts', 'requests'];
-    const adminRoutes = ['employees', 'departments', 'accounts'];
+    const adminRoutes     = ['employees', 'departments', 'accounts'];
 
     if (protectedRoutes.includes(route) && !currentUser) {
         showToast('Please log in first', 'warning');
@@ -140,7 +150,7 @@ function handleRouting() {
         return;
     }
 
-    if (adminRoutes.includes(route) && (!currentUser || currentUser.role !== 'Admin')) {
+    if (adminRoutes.includes(route) && currentUser?.role !== 'Admin') {
         showToast('Access denied. Admin only.', 'danger');
         navigateTo('#/');
         return;
@@ -157,7 +167,6 @@ function handleRouting() {
             break;
         case 'verify-email':
             pageId = 'verify-email-page';
-         
             const unverifiedEmail = localStorage.getItem('unverified_email');
             if (unverifiedEmail) {
                 document.getElementById('verify-email-display').textContent = unverifiedEmail;
@@ -165,7 +174,6 @@ function handleRouting() {
             break;
         case 'login':
             pageId = 'login-page';
-          
             if (localStorage.getItem('email_verified') === 'true') {
                 document.getElementById('login-success-alert').classList.remove('d-none');
                 localStorage.removeItem('email_verified');
@@ -195,65 +203,56 @@ function handleRouting() {
             pageId = 'home-page';
     }
 
-  
     const page = document.getElementById(pageId);
-    if (page) {
-        page.classList.add('active');
-    }
+    if (page) page.classList.add('active');
 }
+
+// ── Auth state ────────────────────────────────────────────────────────────────
 
 function setAuthState(isAuth, user = null) {
     currentUser = user;
-    const body = document.body;
+    const body  = document.body;
 
     if (isAuth && user) {
-      
         body.classList.remove('not-authenticated');
         body.classList.add('authenticated');
+        body.classList.toggle('is-admin', user.role === 'Admin');
 
-        
-        if (user.role === 'Admin') {
-            body.classList.add('is-admin');
-        } else {
-            body.classList.remove('is-admin');
-        }
-
-        const displayName = user.lastName ? user.firstName + ' ' + user.lastName : user.firstName;
+        const displayName = user.lastName
+            ? `${user.firstName} ${user.lastName}`
+            : user.firstName;
         document.getElementById('username-display').textContent = displayName;
     } else {
-      
         body.classList.remove('authenticated', 'is-admin');
         body.classList.add('not-authenticated');
         currentUser = null;
     }
 }
 
+// ── Event listeners ───────────────────────────────────────────────────────────
+
 function initializeEventListeners() {
-   
     document.getElementById('register-form').addEventListener('submit', handleRegister);
-    
-  
     document.getElementById('login-form').addEventListener('submit', handleLogin);
     document.getElementById('logout-btn').addEventListener('click', handleLogout);
-    
     document.getElementById('simulate-verify-btn').addEventListener('click', handleVerifyEmail);
 
-    document.getElementById('add-employee-btn').addEventListener('click', showEmployeeForm);
+    document.getElementById('add-employee-btn').addEventListener('click', () => showEmployeeForm());
     document.getElementById('cancel-employee-btn').addEventListener('click', hideEmployeeForm);
     document.getElementById('employee-form').addEventListener('submit', handleEmployeeSubmit);
 
     document.getElementById('add-department-btn').addEventListener('click', () => showDepartmentForm());
 
-    
-    document.getElementById('add-account-btn').addEventListener('click', showAccountForm);
+    document.getElementById('add-account-btn').addEventListener('click', () => showAccountForm());
     document.getElementById('cancel-account-btn').addEventListener('click', hideAccountForm);
     document.getElementById('account-form').addEventListener('submit', handleAccountSubmit);
 
-   
     document.getElementById('new-request-btn').addEventListener('click', showRequestModal);
     document.getElementById('add-item-btn').addEventListener('click', addRequestItem);
     document.getElementById('request-form').addEventListener('submit', handleRequestSubmit);
 }
+
+// ── Auth handlers ─────────────────────────────────────────────────────────────
 
 async function handleRegister(e) {
     e.preventDefault();
@@ -265,12 +264,13 @@ async function handleRegister(e) {
 
     const { ok, data } = await apiCall('/register', {
         method: 'POST',
-        body:   JSON.stringify({ username: email, password, role: 'user' })
+        body:   JSON.stringify({ username: email, password, firstName, lastName })
     });
 
     if (ok) {
         localStorage.setItem('unverified_email', email);
 
+        // Keep localStorage in sync so other features still work
         window.db.accounts.push({
             id: generateId(), firstName, lastName,
             email, password, role: 'User', verified: false
@@ -284,36 +284,41 @@ async function handleRegister(e) {
     }
 }
 
-function handleVerifyEmail() {
+async function handleVerifyEmail() {
     const email = localStorage.getItem('unverified_email');
     if (!email) {
         showToast('No pending verification', 'warning');
         return;
     }
 
-    
-    const account = window.db.accounts.find(acc => acc.email === email);
-    if (account) {
-       
-        account.verified = true;
-        saveToStorage();
+    // Update the backend
+    const { ok, data } = await apiCall('/verify-email', {
+        method: 'POST',
+        body:   JSON.stringify({ username: email })
+    });
 
-        
+    if (ok) {
+        // Also update localStorage to keep both in sync
+        const account = window.db.accounts.find(acc => acc.email === email);
+        if (account) {
+            account.verified = true;
+            saveToStorage();
+        }
+
         localStorage.removeItem('unverified_email');
         localStorage.setItem('email_verified', 'true');
 
         showToast('Email verified successfully!', 'success');
         navigateTo('#/login');
     } else {
-        showToast('Account not found', 'danger');
+        showToast(data.error || 'Verification failed', 'danger');
     }
 }
 
-// handle login
 async function handleLogin(e) {
     e.preventDefault();
 
-    const email    = document.getElementById('login-email').value.trim().toLowerCase();
+    const email    = document.getElementById('login-email').value.trim();
     const password = document.getElementById('login-password').value;
 
     const { ok, data } = await apiCall('/login', {
@@ -326,8 +331,10 @@ async function handleLogin(e) {
 
         const account = window.db.accounts.find(acc => acc.email === email && acc.verified);
         setAuthState(true, account || {
-            firstName: data.user.username, lastName: '',
-            email, role: data.user.role
+            firstName: email,
+            lastName:  '',
+            email,
+            role:      data.user.role
         });
 
         showToast('Login successful!', 'success');
@@ -337,38 +344,32 @@ async function handleLogin(e) {
     }
 }
 
-// handle logout
 function handleLogout(e) {
     e.preventDefault();
     localStorage.removeItem('auth_token');
-    sessionStorage.removeItem('authToken');   // ← clear the JWT too
+    sessionStorage.removeItem('authToken');
     setAuthState(false);
     showToast('Logged out successfully', 'info');
     navigateTo('#/');
 }
 
-// render profile page
+// ── Profile ───────────────────────────────────────────────────────────────────
+
 function renderProfile() {
     if (!currentUser) return;
 
-    const html = `
+    document.getElementById('profile-content').innerHTML = `
         <div class="mb-3">
             <h4>${currentUser.firstName} ${currentUser.lastName}</h4>
         </div>
-        <div class="mb-2">
-            <strong>Email:</strong> ${currentUser.email}
-        </div>
-        <div class="mb-3">
-            <strong>Role:</strong> ${currentUser.role}
-        </div>
+        <div class="mb-2"><strong>Email:</strong> ${currentUser.email}</div>
+        <div class="mb-3"><strong>Role:</strong> ${currentUser.role}</div>
         <button class="btn btn-primary" onclick="alert('Dummy button only!')">Edit Profile</button>
     `;
-
-    document.getElementById('profile-content').innerHTML = html;
 }
 
+// ── Accounts ──────────────────────────────────────────────────────────────────
 
-// render accounts list
 async function renderAccountsList() {
     const { ok, data } = await apiCall('/accounts');
     if (!ok) {
@@ -387,7 +388,9 @@ async function renderAccountsList() {
     document.getElementById('accounts-list').innerHTML = `
         <table class="table table-striped">
             <thead>
-                <tr><th>Name</th><th>Email</th><th>Role</th><th>Verified</th><th>Actions</th></tr>
+                <tr>
+                    <th>Name</th><th>Email</th><th>Role</th><th>Verified</th><th>Actions</th>
+                </tr>
             </thead>
             <tbody>
                 ${accounts.map(acc => `
@@ -408,8 +411,6 @@ async function renderAccountsList() {
     `;
 }
 
-
-// show account form
 function showAccountForm(account = null) {
     const container = document.getElementById('account-form-container');
     const form      = document.getElementById('account-form');
@@ -430,13 +431,19 @@ function showAccountForm(account = null) {
     container.classList.remove('d-none');
 }
 
-// hide account form
 function hideAccountForm() {
     document.getElementById('account-form-container').classList.add('d-none');
     document.getElementById('account-form').reset();
 }
 
-// submit account form
+async function editAccount(id) {
+    const { ok, data } = await apiCall('/accounts');
+    if (!ok) { showToast('Failed to load accounts', 'danger'); return; }
+
+    const account = data.accounts.find(a => a.id === id);
+    if (account) showAccountForm(account);
+}
+
 async function handleAccountSubmit(e) {
     e.preventDefault();
 
@@ -471,16 +478,6 @@ async function handleAccountSubmit(e) {
     }
 }
 
-// edit account
-async function editAccount(id) {
-    const { ok, data } = await apiCall('/accounts');
-    if (!ok) { showToast('Failed to load accounts', 'danger'); return; }
-
-    const account = data.accounts.find(a => a.id === id);
-    if (account) showAccountForm(account);
-}
-
-// reset password
 async function resetPassword(id) {
     const newPassword = prompt('Enter new password (minimum 6 characters):');
     if (newPassword === null) return;
@@ -512,24 +509,8 @@ async function deleteAccount(id) {
     }
 }
 
-// delete account
-function deleteAccount(id) {
-    // don't let user delete their own account
-    if (currentUser && currentUser.id === id) {
-        showToast('Cannot delete your own account', 'danger');
-        return;
-    }
+// ── Departments ───────────────────────────────────────────────────────────────
 
-    if (confirm('Delete this account? This action cannot be undone.')) {
-        window.db.accounts = window.db.accounts.filter(a => a.id !== id);
-        saveToStorage();
-        showToast('Account deleted', 'info');
-        renderAccountsList();
-    }
-}
-
-
-// render departments list
 async function renderDepartmentsList() {
     const { ok, data } = await apiCall('/departments');
     if (!ok) {
@@ -557,7 +538,7 @@ async function renderDepartmentsList() {
                         <td>${dept.description}</td>
                         <td class="table-actions">
                             <button class="btn btn-sm btn-primary"
-                                onclick="editDepartment('${dept.id}','${dept.name}','${dept.description}')">Edit</button>
+                                onclick="editDepartment('${dept.id}', '${dept.name}', '${dept.description}')">Edit</button>
                             <button class="btn btn-sm btn-danger"
                                 onclick="deleteDepartment('${dept.id}')">Delete</button>
                         </td>
@@ -608,8 +589,8 @@ async function deleteDepartment(id) {
     if (ok) renderDepartmentsList();
 }
 
+// ── Employees ─────────────────────────────────────────────────────────────────
 
-// render employees list
 async function renderEmployeesList() {
     const { ok, data } = await apiCall('/employees');
     if (!ok) {
@@ -648,7 +629,6 @@ async function renderEmployeesList() {
     `;
 }
 
-// show employee form
 async function showEmployeeForm(employeeId = null) {
     const container = document.getElementById('employee-form-container');
     const form      = document.getElementById('employee-form');
@@ -682,7 +662,11 @@ async function showEmployeeForm(employeeId = null) {
     container.classList.remove('d-none');
 }
 
-// hide employee form
+function hideEmployeeForm() {
+    document.getElementById('employee-form-container').classList.add('d-none');
+    document.getElementById('employee-form').reset();
+}
+
 async function handleEmployeeSubmit(e) {
     e.preventDefault();
 
@@ -696,8 +680,10 @@ async function handleEmployeeSubmit(e) {
 
     const { ok, data } = await apiCall(
         editId ? `/employees/${editId}` : '/employees',
-        { method: editId ? 'PUT' : 'POST',
-          body: JSON.stringify({ employeeId, userEmail, position, departmentId, hireDate }) }
+        {
+            method: editId ? 'PUT' : 'POST',
+            body:   JSON.stringify({ employeeId, userEmail, position, departmentId, hireDate })
+        }
     );
 
     if (ok) {
@@ -708,12 +694,11 @@ async function handleEmployeeSubmit(e) {
         showToast(data.error || 'Operation failed', 'danger');
     }
 }
-// edit employee
+
 function editEmployee(id) {
     showEmployeeForm(id);
 }
 
-// delete employee
 async function deleteEmployee(id) {
     if (!confirm('Are you sure you want to delete this employee?')) return;
 
@@ -726,7 +711,8 @@ async function deleteEmployee(id) {
     }
 }
 
-// render requests list
+// ── Requests ──────────────────────────────────────────────────────────────────
+
 async function renderRequestsList() {
     const { ok, data } = await apiCall('/requests');
     if (!ok) {
@@ -771,46 +757,32 @@ async function renderRequestsList() {
     `;
 }
 
-// show request modal
 function showRequestModal() {
     const modal = new bootstrap.Modal(document.getElementById('requestModal'));
-    const form = document.getElementById('request-form');
-    
-    form.reset();
-
-    // reset items to just one row
+    document.getElementById('request-form').reset();
     document.getElementById('request-items').innerHTML = `
         <div class="input-group mb-2">
-            <input type="text" class="form-control item-name" placeholder="Item name" required>
-            <input type="number" class="form-control item-qty" placeholder="Qty" value="1" min="1" required>
+            <input type="text"   class="form-control item-name" placeholder="Item name" required>
+            <input type="number" class="form-control item-qty"  placeholder="Qty" value="1" min="1" required>
             <button type="button" class="btn btn-danger remove-item" disabled>×</button>
         </div>
     `;
-
     modal.show();
 }
 
-// add item row to request form
 function addRequestItem() {
     const container = document.getElementById('request-items');
-
-    const newRow = document.createElement('div');
+    const newRow    = document.createElement('div');
     newRow.className = 'input-group mb-2';
     newRow.innerHTML = `
-        <input type="text" class="form-control item-name" placeholder="Item name" required>
-        <input type="number" class="form-control item-qty" placeholder="Qty" value="1" min="1" required>
+        <input type="text"   class="form-control item-name" placeholder="Item name" required>
+        <input type="number" class="form-control item-qty"  placeholder="Qty" value="1" min="1" required>
         <button type="button" class="btn btn-danger remove-item">×</button>
     `;
-
-    // add click event to remove button
-    newRow.querySelector('.remove-item').addEventListener('click', function() {
-        newRow.remove();
-    });
-
+    newRow.querySelector('.remove-item').addEventListener('click', () => newRow.remove());
     container.appendChild(newRow);
 }
 
-// submit request
 async function handleRequestSubmit(e) {
     e.preventDefault();
 
@@ -843,14 +815,9 @@ async function handleRequestSubmit(e) {
     }
 }
 
-// generate unique id
-function generateId() {
-    return Date.now().toString(36) + Math.random().toString(36).substring(2);
-}
+// ── Toast ─────────────────────────────────────────────────────────────────────
 
-// show toast notification
 function showToast(message, type = 'info') {
-    // get or create container
     let container = document.querySelector('.toast-container');
     if (!container) {
         container = document.createElement('div');
@@ -858,7 +825,6 @@ function showToast(message, type = 'info') {
         document.body.appendChild(container);
     }
 
-    // create toast
     const toast = document.createElement('div');
     toast.className = `alert alert-${type} alert-dismissible fade show`;
     toast.setAttribute('role', 'alert');
@@ -866,10 +832,8 @@ function showToast(message, type = 'info') {
         ${message}
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     `;
-
     container.appendChild(toast);
 
-    // remove after 3 seconds
     setTimeout(() => {
         toast.classList.remove('show');
         setTimeout(() => toast.remove(), 150);
