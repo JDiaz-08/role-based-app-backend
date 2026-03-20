@@ -331,8 +331,8 @@ async function handleLogin(e) {
 
         const account = window.db.accounts.find(acc => acc.email === email && acc.verified);
         setAuthState(true, account || {
-            firstName: email,
-            lastName:  '',
+            firstName: data.user.firstName || email,
+            lastName:  data.user.lastName  || '',
             email,
             role:      data.user.role
         });
